@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" style="font-size: 100px">
+
+<head>
+  <meta charset="UTF-8">
+  <title>智能交互</title>
+  <link rel="stylesheet" href="/hwICSUiSdk/HwICSUiSdk.css">
+  <style>
+    body {
+      font-size: 16px;
+    }
+
+    #ics-root {
+      z-index: 1;
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 80vw;
+      height: 100vh;
+    }
+
+    .entry-container {
+      z-index: 2;
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      width: 30vw;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="entry-container">
+    <div style="display: flex;">
+      <button onclick="doInit()">开始智能交互</button>
+      <button onclick="interactionModeSwitch('AUDIO')">切换语音交互</button>
+      <button onclick="interactionModeSwitch('TEXT')">切换文本交互</button>
+    </div>
+    <label>
+      播报: <input id="sendDrivenText" placeholder="请输入播报内容" style="display: inline-block;" value="">
+      <button onclick="sendDrivenText()">播报</button>
+    </label>
+    <label>
+      提问: <input id="sendTextQuestion" placeholder="请输入提问内容" style="display: inline-block;" value="">
+      <button onclick="sendTextQuestion()">提问</button>
+    </label>
+    <hr />
+    <div>
+      <div>问题：<span id="question"></span></div>
+      <div>回答：<span id="answer"></span></div>
+    </div>
+  </div>
+  <div id="ics-root"></div>
+  <script src="/hwICSUiSdk/HwICSUiSdk.js"></script>
+  <script>
+    let currentAnswer = ''
+    const doInit = async () => {
+      const result = await HwICSUiSdk.checkBrowserSupport();
+      console.log('checkBrowserSupport', result)
+      if (!result) {
+        return;
+      }
+      const onceCode = await fetch('https://ztcloud.jwell56.com/oms/huawei/once/code', {
+        method: 'POST',
+      })
+      const { data } = await onceCode.json();
+      await HwICSUiSdk.initResourcePath({
+        wasmPath: '/hwICSUiSdk/wasmData.js',
+        dataPath: '/hwICSUiSdk/modelData.js',
+        initModel: true,
+      });
+      await HwICSUiSdk.create({
+        onceCode: data.trim(),
+        serverAddress: 'metastudio-api.cn-north-4.myhuaweicloud.com',
+        robotId: '2c9080f59639225101963d7d4bc901f1',
+        containerId: 'ics-root',
+        config: {
+          enableLocalWakeup: true,
+          enableCaption: true,
+          enableChatBtn: true,
+          useDefaultBackground: false,
+        },
+        eventListeners: {
+          speakingStart: () => {
+            console.log('speakingStart');
+          },
+          speakingStop: () => {
+            console.log('speakingStop');
+          },
+          speechRecognized: (question) => {
+            console.log('question', question);
+            document.querySelector('#question').innerText = question.text;
+          },
+          semanticRecognized: (answer) => {
+            console.log('answer', answer);
+            currentAnswer += answer.text;
+            document.querySelector('#answer').innerText = currentAnswer;
+            if (answer.isLast) {
+              currentAnswer = ''
+            }
+          },
+          error: (error) => {
+            console.error('sdk error', {
+              message: error.message,
+              code: error.code,
+              requestId: error.requestId
+            }, error);
+          }
+        }
+      });
+    }
+
+    // 切换驱动模式
+    const interactionModeSwitch = async (mode) => {
+      await HwICSUiSdk.interactionModeSwitch({ interactionMode: mode });
+      await HwICSUiSdk.startChat({ interactionMode: mode });
+
+      // if (mode === 'TEXT') {
+      //   await HwICSUiSdk.interruptSpeaking();
+      //   await HwICSUiSdk.stopUserSpeak();
+      //   await HwICSUiSdk.stopSpeak();
+      //   await HwICSUiSdk.stopChat();
+      //   await HwICSUiSdk.startChat({ interactionMode: 'TEXT' });
+      // }
+      // await HwICSUiSdk.interactionModeSwitch({ interactionMode: mode });
+      const { result, interactionMode } = await HwICSUiSdk.activeInteractionMode();
+      alert(`${result ? '切换成功' : '切换失败'}, 当前驱动模式: ${interactionMode}`);
+    }
+
+    // 播报
+    const sendDrivenText = async () => {
+      const text = document.querySelector('#sendDrivenText').value;
+      const { result } = await HwICSUiSdk.sendDrivenText({ text, isLast: true });
+    }
+
+    // 提问
+    const sendTextQuestion = async () => {
+      const text = document.querySelector('#sendTextQuestion').value;
+      const { result } = await HwICSUiSdk.sendTextQuestion({ text });
+      document.querySelector('#question').innerText = text;
+    }
+  </script>
+</body>
+
+</html>

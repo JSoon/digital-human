@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" style="font-size: 100px">
+<head>
+  <meta charset="UTF-8">
+  <title>智能交互</title>
+  <link rel="stylesheet" href="./HwICSUiSdk.css">
+  <style>
+    body{
+      font-size: 16px;
+    }
+    #ics-root{
+      width: 80vw; height: 80vh
+    }
+    .entry-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+    }
+  </style>
+</head>
+<body>
+<div class="entry-container">
+  <h2>文本交互模式demo</h2>
+  <label>
+    请输入serverAddress: <input id="serverAddress" placeholder="请输入服务器地址" style="display: inline-block;width: 800px" value="">
+  </label>
+  <label>
+    请输入robotId: <input id="robotId" placeholder="请输入robotId" style="display: inline-block;width: 800px" value="">
+  </label>
+  <label>
+    请输入一次性token: <input id="token" placeholder="请输入一次性token" style="width: 600px">
+  </label>
+  <button style="width: 200px;height: 50px" onclick="doInit()">开始智能交互</button>
+</div>
+<div id="ics-root"></div>
+<script src="./HwICSUiSdk.js"></script>
+
+<script>
+  const doInit = async () => {
+    const serverAddress = document.querySelector('#serverAddress').value;
+    const robotId = document.querySelector('#robotId').value;
+    const token = document.querySelector('#token').value;
+    const result = await HwICSUiSdk.checkBrowserSupport();
+    console.log('checkBrowserSupport', result)
+    if (!result) {
+      return;
+    }
+    if (serverAddress && robotId && token) {
+      await HwICSUiSdk.create({
+        onceCode: token.trim(),
+        serverAddress,
+        robotId,
+        containerId: 'ics-root',
+        eventListeners: {
+          error: (error) => {
+            console.error('sdk error', {
+              message: error.message,
+              code: error.code,
+              requestId: error.requestId
+            }, error);
+          },
+          jobInfoChange: (jobInfo) => {
+            alert(`jobInfoChange: ${JSON.stringify(jobInfo)}`)
+          }
+        }
+      });
+    }
+  }
+</script>
+</body>
+</html>

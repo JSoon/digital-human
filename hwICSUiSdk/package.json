@@ -1,0 +1,6 @@
+{
+  "name": "HwICSUiSdk",
+  "version": "3.2.0",
+  "main": "HwICSUiSdk.js",
+  "types": "HwICSUiSdk.d.ts"
+}
