@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <title>智能交互</title>
   <link rel="stylesheet" href="/hwICSUiSdk/HwICSUiSdk.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sindresorhus/github-markdown-css@5.8.1/github-markdown.css">
   <style>
     body {
       font-size: 16px;
@@ -49,13 +50,21 @@
     </label>
     <hr />
     <div>
-      <div>问题：<span id="question"></span></div>
-      <div>回答：<span id="answer"></span></div>
+      <div>问题：<div id="question"></div></div>
+      <div>回答：<div id="answer" class="markdown-body"></div></div>
     </div>
   </div>
   <div id="ics-root"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
   <script src="/hwICSUiSdk/HwICSUiSdk.js"></script>
   <script>
+    const md = window.markdownit({
+      html: true,
+      breaks: true,
+      linkify: true,
+    });
+
     let currentAnswer = ''
     const doInit = async () => {
       const result = await HwICSUiSdk.checkBrowserSupport();
@@ -97,7 +106,9 @@
           semanticRecognized: (answer) => {
             console.log('answer', answer);
             currentAnswer += answer.text;
-            document.querySelector('#answer').innerText = currentAnswer;
+            console.log('currentAnswer 1', currentAnswer);
+            console.log('currentAnswer 2', md.render(currentAnswer));
+            document.querySelector('#answer').innerHTML = md.render(currentAnswer);
             if (answer.isLast) {
               currentAnswer = ''
             }
